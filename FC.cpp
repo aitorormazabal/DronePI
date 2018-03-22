@@ -29,13 +29,9 @@ void FC::LoadSettings(std::string fileName){
 		{
 			float P,I,D;
 			file>>P>>I>>D;
-			ratePIDS[i]->P=P;
-			ratePIDS[i]->I=I;
-			ratePIDS[i]->D=D;
+			setRatePIDs(P,I,D,i);
 			file>>P>>I>>D;
-			anglePIDS[i]->P=P;
-			anglePIDS[i]->I=I;
-			anglePIDS[i]->D=D;
+			setAnglePIDs(P,I,D,i);
 		}
 		file.close();
 	}
@@ -43,10 +39,9 @@ void FC::LoadSettings(std::string fileName){
 void FC::Init(){
 	for (int i=0;i<3;i++)
 	{
-		ratePIDS[i]= new PID(0,0,0,500,150,LOOP_TIME_S);
-		anglePIDS[i]= new PID(0,0,0,500,150,LOOP_TIME_S);
+		ratePIDS[i]= new PID(0,0,0,500,150);
+		anglePIDS[i]= new PID(0,0,0,500,150);
 	}
-	_state=STATE_UNARMED;
 	msWithoutInput=0;
 	Input::instance().Init();
 	printf("Input Initialized\n");
@@ -55,8 +50,11 @@ void FC::Init(){
 	usleep(20000);
 	IMU::instance().Calibrate();
 	printf("IMU Calibrated\n");
+	LoadSettings("Settings.txt");
 	Output::instance().Init(0,2,1,3, PWM_RES);
 	printf("Output Initialized\n");
+	Unarm();
+	lastTimePID=-1;
 }
 
 void FC::setRatePIDs(float P, float I, float D, int axis){
@@ -64,25 +62,36 @@ void FC::setRatePIDs(float P, float I, float D, int axis){
 	ratePIDS[axis]->P=P;
 	ratePIDS[axis]->I=I;
 	ratePIDS[axis]->D=D;
-	if (axis==1&&_state==STATE_UNARMED)
-	{
-		_state=STATE_ARMED_RATE;
-		printf("Entering rate mode\n");
-	}
 }
 void FC::setAnglePIDs(float P, float I, float D, int axis){
 	printf("Setting angle PIDs: %f %f %f %d\n", P,I,D,axis);
 	anglePIDS[axis]->P=P;
 	anglePIDS[axis]->I=I;
 	anglePIDS[axis]->D=D;
-	if (axis==1&&_state==STATE_ARMED_RATE)
-	{
-		printf("Entering angle mode\n");
-		_state=STATE_ARMED_ANGLE;
-	}
 }
 void FC::setAltitudePID(float P, float I, float D){
 	printf("Setting Altitude PIDs: %f %f %f \n", P,I,D);
+}
+void FC::ChangeState(int state)
+{
+	for (int i=0;i<3;i++) //Reset PID errors on state change
+	{
+		ratePIDS[i]->Reset();
+		anglePIDS[i]->Reset();
+	}
+	if (state==STATE_ARMED_RATE){
+		printf("Entering Rate mode\n");
+		_state=STATE_ARMED_RATE;
+	}
+	else if (state==STATE_ARMED_ANGLE){
+		printf("Entering Angle mode\n");
+		_state=STATE_ARMED_ANGLE;
+		IMU::instance().SetLevel();
+	}
+	else if (state==STATE_UNARMED){
+		printf("Unarming\n");
+		Unarm();
+	}
 }
 void FC::ResetInputTimer(){
 	msWithoutInput=0;
@@ -130,13 +139,18 @@ void FC::Unarm(){
 	}
 }
 void FC::RunPIDs(){
+	long deltaus=us()-lastTimePID;
+	deltaus=deltaus%1000000;
+	float delta=((float) deltaus)/1000000.0f;
+	if (lastTimePID==-1)
+		delta=0.01f;
 	if (_state==STATE_ARMED_RATE)
 	{
 		for (int i=0;i<3;i++)
 		{
 			ratePIDS[i]->target=Input::instance().targetRate[i];
 			ratePIDS[i]->reading=IMU::instance().rate(i);
-			PIDResults[i]=ratePIDS[i]->Run();
+			PIDResults[i]=ratePIDS[i]->Run(delta);
 		}
 	}
 	if (_state==STATE_ARMED_ANGLE)
@@ -145,11 +159,12 @@ void FC::RunPIDs(){
 		{
 			anglePIDS[i]->target=Input::instance().targetAngle[i];
 			anglePIDS[i]->reading=IMU::instance().angle(i);
-			ratePIDS[i]->target=anglePIDS[i]->Run();
+			ratePIDS[i]->target=anglePIDS[i]->Run(delta);
 			ratePIDS[i]->reading=IMU::instance().rate(i);
-			PIDResults[i]=ratePIDS[i]->Run();
+			PIDResults[i]=ratePIDS[i]->Run(delta);
 		}
 	}
+	lastTimePID=us();
 }
 void FC::WriteOutput(){
 	if (_state==STATE_UNARMED)

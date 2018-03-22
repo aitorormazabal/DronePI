@@ -23,6 +23,7 @@ public:
   static IMU& instance();
   float angle(int axis);
   float rate(int axis);
+  void SetLevel();
   void Init();
   void Calibrate();
   void Update();

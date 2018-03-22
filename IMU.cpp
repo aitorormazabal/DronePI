@@ -7,8 +7,6 @@
 #include <unistd.h>
 #include <math.h>
 #include "I2Cdev.h"
-#include "MS5611.h"
-#include "altitude_kf.h"
 #include  "MPU6050_6Axis_MotionApps20.h"
 #include "IMU.h"
 #include "FC.h"
@@ -145,6 +143,11 @@ void IMU::Update()
       ;
    }
 }
+void IMU::SetLevel()
+{
+  for (int i=0;i<3;i++)
+    calAngles[i]=anglesDMP[i];
+}
 float IMU::rate(int axis)
 {
   return gyroData[axis];
@@ -154,5 +157,5 @@ float IMU::angle(int axis)
   return anglesDMP[axis]-calAngles[axis];
 }
 void IMU::PrintState(){
-  printf("X:%f Y:%f Z:%f GX:%f GY:%f GZ:%f\n",angle(0),angle(1),angle(2),rate(0),rate(1),rate(2));
+  printf("X:%f Y:%f Z:%f RX:%f RY:%f RZ:%f\n",angle(0),angle(1),angle(2),anglesDMP[0],anglesDMP[1],anglesDMP[2]);
 }

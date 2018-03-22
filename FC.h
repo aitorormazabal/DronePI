@@ -12,6 +12,7 @@ public:
 	void setAnglePIDs(float P, float I, float D, int axis);
 	void setRatePIDs(float P, float I, float D, int axis);
 	void setAltitudePID(float P, float I, float D);
+	void ChangeState(int state);
 	static const int STATE_UNARMED=0;
 	static const int STATE_ARMED_RATE=1;
 	static const int STATE_ARMED_ANGLE=2;
@@ -22,6 +23,7 @@ public:
 	int PWM_MIN=1200;
 	int PWM_MAX=1900;
 private:
+	long lastTimePID;
 	FC(){};
 	void LoadSettings(std::string file);
 	void RunPIDs();

@@ -1,7 +1,7 @@
 #include "PID.h"
 #include <stdio.h>
 #include "Helper.h"
-PID::PID(float P,float I, float D, float errorBound, float outputBound, float delta)
+PID::PID(float P,float I, float D, float errorBound, float outputBound)
 {
 	this->P=P;
 	this->I=I;
@@ -15,19 +15,18 @@ PID::PID(float P,float I, float D, float errorBound, float outputBound, float de
 	{
 		pastDerivatives[i]=0;
 	}
-	this->delta=delta;
 	this->outputBound=outputBound;
 }
 void PID::Reset(){
     error=0;
 }
-float PID::Run()
+float PID::Run(float delta)
 {
     float currError=target-reading;
     error+=(currError*delta);
     error=constrain(error,-errorBound,errorBound);
     float PTerm=P*currError;
-    float currentD=-(reading-lastReading);
+    float currentD=-(reading-lastReading)/(delta*100);
     float filteredD=currentD+pastDerivatives[0]+pastDerivatives[1]+pastDerivatives[2]+pastDerivatives[3];
     filteredD=filteredD/5;
     float DTerm=D*filteredD;

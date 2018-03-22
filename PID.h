@@ -12,7 +12,7 @@ public:
 	float target;
 	float reading;
 	float output;
-	PID(float P,float I,float D, float errorBound,float outputBound,float delta);
-	float Run();//returns output
+	PID(float P,float I,float D, float errorBound,float outputBound);
+	float Run(float delta);//returns output
 	void Reset();
 };

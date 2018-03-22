@@ -87,6 +87,17 @@ void Input::Update()
         yawData=-yawData;
       WriteInputs(pitchData, rollData, yawData, throttleData);
     }
+    else if (code=='S')//S for state
+    {
+      char state=readData[0];
+      if (state=='A')//Angle
+        state=FC::STATE_ARMED_ANGLE;
+      else if (state=='R')//Rate
+        state=FC::STATE_ARMED_RATE;
+      else if (state=='U')//Unarm
+        state=FC::STATE_UNARMED;
+      FC::instance().ChangeState(state);
+    }
     else if (code=='P')//P for PItch
     {
       float P=readData[0]&127;
