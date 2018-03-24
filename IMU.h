@@ -14,6 +14,7 @@ private:
   MPU6050 mpu;
   float calAngles[3];
   float anglesDMP[3];
+  float anglesCF[3];//Complementary filter angles
   float gyroData[3];
   int16_t rawGyro[3];
   float accelScale;

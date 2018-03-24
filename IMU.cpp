@@ -16,62 +16,6 @@ IMU& IMU::instance(){
     static IMU instance;
     return instance;
 }
-void IMU::Calibrate()
-{
-  double avgX=0;
-  double avgY=0;
-  double avgAcc=0;
-  int numITS=2000;
-  int fifoCount;
-  uint8_t fifoBuffer[64];
-  for (int i=0;i<numITS;i++)
-  {
-    long t=millis();
-    mpu.getMotion6(&rawAcc[0], &rawAcc[1], &rawAcc[2], &rawGyro[0], &rawGyro[1], &rawGyro[2]);
-   
-
-    fifoCount = mpu.getFIFOCount();
-   if (fifoCount>1000)
-   {
-    mpu.resetFIFO();
-    printf("FIFO OVERFLOW\n");
-   }
-   if (fifoCount >= packetSize)
-   {
-      Quaternion q;
-      VectorFloat gravity;  
-      mpu.getFIFOBytes(fifoBuffer, packetSize);
-      mpu.dmpGetQuaternion(&q, fifoBuffer);
-      mpu.dmpGetGravity(&gravity, &q);
-      mpu.dmpGetYawPitchRoll(calAngles, &q, &gravity);
-      float tmp=calAngles[0];
-      //switch from zyx to xyz order and from radian to degree
-      calAngles[0]=calAngles[2]*180/M_PI;
-      calAngles[2]=-tmp*180/M_PI;
-      calAngles[1]=-calAngles[1]*180/M_PI;
-   }
-   if (i>numITS-200)
-        avgAcc+=rawAcc[2];
-    long elapsed=millis()-t;
-    bool waited=false;
-    if (elapsed<FC::LOOP_TIME_MS)
-    {
-      waited=true;
-      struct timespec time,rem;
-      time.tv_sec=0;
-      time.tv_nsec=(FC::LOOP_TIME_MS-elapsed)*1000000;
-      int res=nanosleep(&time,&rem);
-    }
-    if (!waited)
-    {
-      printf("Calibration lagging! ");
-      printf("%ld\n", elapsed);
-    }
-  }
-  avgAcc=avgAcc/199;
-  accelScale=avgAcc/9.8f;
-}
-
 
 void IMU::Init(){
     printf("Initializing I2C devices...\n");
@@ -103,6 +47,12 @@ void IMU::Init(){
     anglesDMP[0]=0;
     anglesDMP[2]=0;
     anglesDMP[1]=0;
+    anglesCF[0]=0;
+    anglesCF[1]=0;
+    anglesCF[2]=0;
+    calAngles[0]=0;
+    calAngles[1]=0;
+    calAngles[2]=0;
     packetFlag=false;
 }
 
@@ -116,37 +66,24 @@ void IMU::Update()
    gyroData[1]=rawGyro[1]/gyroScale;
    gyroData[2]=rawGyro[2]/gyroScale;
 
-   fifoCount = mpu.getFIFOCount();
-   if (fifoCount>=3*packetSize)
-   {
-    mpu.resetFIFO();
-    printf("\n\n\n\n\n\n\n------------------------------------------------------------\n\n\n\n\n\n\nFIFO OVERFLOW\n\n\n\n\n\n\n-----------------------------------------------\n\n\n\n\n\n\n\n\n\n\n\n");
-   }
-   if (fifoCount >= packetSize)
-   {
-      Quaternion q;
-      VectorFloat gravity;  
-      mpu.getFIFOBytes(fifoBuffer, packetSize);
-      mpu.dmpGetQuaternion(&q, fifoBuffer);
-      mpu.dmpGetGravity(&gravity, &q);
-      
-      VectorFloat g2=gravity;
-      g2.normalize();
-      mpu.dmpGetYawPitchRoll(anglesDMP, &q, &gravity);
-      float tmp=anglesDMP[0];
-      //switch from zyx to xyz order and from radian to degree
-      anglesDMP[0]=anglesDMP[2]*180/M_PI;
-      anglesDMP[2]=-tmp*180/M_PI;
-      anglesDMP[1]=-anglesDMP[1]*180/M_PI;
-   }
-   else{
-      ;
-   }
+   double xSQ=rawAcc[0]*rawAcc[0];
+   double ySQ=rawAcc[1]*rawAcc[1];
+   double zSQ=rawAcc[2]*rawAcc[2];
+
+   double normXZ=sqrt(xSQ+zSQ);
+   double normYZ=sqrt(ySQ+zSQ);
+
+   double pitchAccel=-atan2(rawAcc[0],normYZ)*180/3.1415f;
+   double rollAccel=atan2(rawAcc[1],normXZ)*180/3.1415f;
+   anglesCF[0]=0.96*(anglesCF[0]+gyroData[0]*FC::LOOP_TIME_S)+0.04*rollAccel;
+   anglesCF[1]=0.96*(anglesCF[1]+gyroData[1]*FC::LOOP_TIME_S)+0.04*pitchAccel;
+
+   
 }
 void IMU::SetLevel()
 {
   for (int i=0;i<3;i++)
-    calAngles[i]=anglesDMP[i];
+    calAngles[i]=anglesCF[i];
 }
 float IMU::rate(int axis)
 {
@@ -154,8 +91,8 @@ float IMU::rate(int axis)
 }
 float IMU::angle(int axis)
 {
-  return anglesDMP[axis]-calAngles[axis];
+  return anglesCF[axis]-calAngles[axis];
 }
 void IMU::PrintState(){
-  printf("X:%f Y:%f Z:%f RX:%f RY:%f RZ:%f\n",angle(0),angle(1),angle(2),anglesDMP[0],anglesDMP[1],anglesDMP[2]);
+  printf("X:%f Y:%f Z:%f RX:%f RY:%f RZ:%f\n",angle(0),angle(1),angle(2),gyroData[0],gyroData[1],gyroData[2]);
 }

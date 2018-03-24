@@ -48,8 +48,6 @@ void FC::Init(){
 	IMU::instance().Init();
 	printf("IMU Initialized\n");
 	usleep(20000);
-	IMU::instance().Calibrate();
-	printf("IMU Calibrated\n");
 	LoadSettings("Settings.txt");
 	Output::instance().Init(0,2,1,3, PWM_RES);
 	printf("Output Initialized\n");
@@ -102,6 +100,7 @@ void FC::Update(){
 	Input::instance().Update();
 	IMU& imu=IMU::instance();
 	imu.Update();
+	imu.PrintState();
 	RunPIDs();
 	WriteOutput();
 
