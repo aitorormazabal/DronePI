@@ -65,6 +65,7 @@ void IMU::Update()
    gyroData[0]=rawGyro[0]/gyroScale;
    gyroData[1]=rawGyro[1]/gyroScale;
    gyroData[2]=rawGyro[2]/gyroScale;
+   CalculateEulerRates();
 
    double xSQ=rawAcc[0]*rawAcc[0];
    double ySQ=rawAcc[1]*rawAcc[1];
@@ -75,10 +76,17 @@ void IMU::Update()
 
    double pitchAccel=-atan2(rawAcc[0],normYZ)*180/3.1415f;
    double rollAccel=atan2(rawAcc[1],normXZ)*180/3.1415f;
-   anglesCF[0]=0.96*(anglesCF[0]+gyroData[0]*FC::LOOP_TIME_S)+0.04*rollAccel;
-   anglesCF[1]=0.96*(anglesCF[1]+gyroData[1]*FC::LOOP_TIME_S)+0.04*pitchAccel;
+   anglesCF[0]=0.96*(anglesCF[0]+eulerRates[0]*FC::LOOP_TIME_S)+0.04*rollAccel;
+   anglesCF[1]=0.96*(anglesCF[1]+eulerRates[1]*FC::LOOP_TIME_S)+0.04*pitchAccel;
 
    
+}
+void IMU::CalculateEulerRates(){//Transforms angular rates read by gyro to euler angle rates
+  if (cos(anglesCF[1]==0))
+    return;
+  eulerRates[0]=gyroData[0] + gyroData[1]*sin(anglesCF[0])*tan(anglesCF[1]) + gyroData[2]*cos(anglesCF[0])*tan(anglesCF[1]);
+  eulerRates[1]=gyroData[1]*cos(anglesCF[0]) - gyroData[2]*sin(anglesCF[0]);
+  eulerRates[2]=gyroData[1]*sin(anglesCF[0])/cos(anglesCF[1]) + gyroData[2]*cos(anglesCF[0])/cos(anglesCF[1]);
 }
 void IMU::SetLevel()
 {

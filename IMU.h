@@ -16,10 +16,12 @@ private:
   float anglesDMP[3];
   float anglesCF[3];//Complementary filter angles
   float gyroData[3];
+  float eulerRates[3];
   int16_t rawGyro[3];
   float accelScale;
   int16_t rawAcc[3];
   bool packetFlag;
+  void CalculateEulerRates();
 public:
   static IMU& instance();
   float angle(int axis);
