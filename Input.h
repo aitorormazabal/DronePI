@@ -12,6 +12,7 @@ public:
 	static Input& instance();
 	float targetRate[3];
 	float targetAngle[3];
+	float cameraPoseT[3];//Camera pose translation
 	int throttle;
 
 	void PrintState();

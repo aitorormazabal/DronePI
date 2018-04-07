@@ -21,6 +21,7 @@ Input& Input::instance(){
   {
     targetRate[i]=0;
     targetAngle[i]=0;
+    cameraPoseT[i]=0;
   }
   throttle=0;
   
@@ -47,23 +48,9 @@ void Input::Update()
   {
     char buf[10];
 	  int res=recv(commsFD,buf,10,0);
-    if (res!=5)
-    {
-      break;
-    }else
-    {
-      char buf2[10];
-      res=recv(commsFD,buf2,10,0);
-      while (res==5)
-      {
-        for (int i=0;i<5;i++)
-          buf[i]=buf2[i];
-        res=recv(commsFD,buf2,10,0);
-      }
 
-    }
     code=buf[0];
-    buf[5]='\0';
+    buf[res]='\0';
     int readData[4];
     for (int i=0;i<4;i++)
     {
@@ -151,6 +138,27 @@ void Input::Update()
       float I=readData[1]&127;
       float D=readData[2]&127;
       FC::instance().setAltitudePID(P/10,I/10,D/10);
+    }
+    else if (code=='C')//Translation data from camera pose estimation
+    {
+      char signs=buf[1];//First three bits of this byte represent signs of the coordinates, 0 if negative, 1 if positive
+      int xSign=signs & 1;
+      xSign=2*xSign-1;//After this xSign is -1 if x coordinate is negative, 1 if it is positive
+      int ySign=(signs >> 1) & 1;
+      ySign=2*ySign-1;
+      int zSign=(signs >> 2) & 1;
+      zSign=2*zSign-1;
+
+      //Next 6 bytes are the absolute value of x,y,z coordinates. Two bytes for each, least significant byte first.
+      char x1=buf[2];
+      char x2=buf[3];
+      cameraPoseT[0]=xSign * (x1+256*x2);
+      char y1=buf[4];
+      char y2=buf[5];
+      cameraPoseT[1]=ySign * (y1+256*y2);
+      char z1=buf[6];
+      char z2=buf[7];
+      cameraPoseT[2]=zSign * (z1+256*z2);
     }
     FC::instance().ResetInputTimer();
   }
