@@ -48,7 +48,9 @@ void Input::Update()
   {
     char buf[10];
 	  int res=recv(commsFD,buf,10,0);
-
+    if (res<=0){
+      break;
+    }
     code=buf[0];
     buf[res]='\0';
     int readData[4];
@@ -149,16 +151,19 @@ void Input::Update()
       int zSign=(signs >> 2) & 1;
       zSign=2*zSign-1;
 
-      //Next 6 bytes are the absolute value of x,y,z coordinates. Two bytes for each, least significant byte first.
+      //Next 6 bytes are the absolute value of x,y,z coordinates, multiplied by 1000. Two bytes for each, least significant byte first.
       char x1=buf[2];
       char x2=buf[3];
-      cameraPoseT[0]=xSign * (x1+256*x2);
       char y1=buf[4];
       char y2=buf[5];
-      cameraPoseT[1]=ySign * (y1+256*y2);
       char z1=buf[6];
       char z2=buf[7];
+      cameraPoseT[0]=xSign * (x1+256*x2);
+      cameraPoseT[0]/=1000;
+      cameraPoseT[1]=ySign * (y1+256*y2);
+      cameraPoseT[1]/=1000;
       cameraPoseT[2]=zSign * (z1+256*z2);
+      cameraPoseT[2]/=1000;
     }
     FC::instance().ResetInputTimer();
   }
@@ -189,7 +194,7 @@ void Input::WriteInputs(int pitch, int roll, int yaw, int throttle)
   }
 }
 void Input::PrintState(){
-  printf("Inputs X:%f Y:%f Z:%f RX:%f RY:%f RZ:%f T:%d\n",targetAngle[0],targetAngle[1],targetAngle[2],targetRate[0],targetRate[1],targetRate[2],throttle);
+  printf("Inputs AX:%f AY:%f AZ:%f RX:%f RY:%f RZ:%f T:%d CX:%f CY:%f CZ:%f\n",targetAngle[0],targetAngle[1],targetAngle[2],targetRate[0],targetRate[1],targetRate[2],throttle, cameraPoseT[0],cameraPoseT[1],cameraPoseT[2]);
 }
 
 

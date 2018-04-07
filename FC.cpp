@@ -100,7 +100,6 @@ void FC::Update(){
 	Input::instance().Update();
 	IMU& imu=IMU::instance();
 	imu.Update();
-	imu.PrintState();
 	RunPIDs();
 	WriteOutput();
 
