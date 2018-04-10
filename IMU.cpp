@@ -62,8 +62,8 @@ void IMU::Update()
    int fifoCount;
    uint8_t fifoBuffer[64];
    mpu.getMotion6(&rawAcc[0], &rawAcc[1], &rawAcc[2], &rawGyro[0], &rawGyro[1], &rawGyro[2]);
-   gyroData[0]=rawGyro[0]/gyroScale;
-   gyroData[1]=rawGyro[1]/gyroScale;
+   gyroData[0]=-rawGyro[0]/gyroScale;
+   gyroData[1]=-rawGyro[1]/gyroScale;
    gyroData[2]=rawGyro[2]/gyroScale;
    CalculateEulerRates();
 
@@ -76,17 +76,23 @@ void IMU::Update()
 
    double pitchAccel=-atan2(rawAcc[0],normYZ)*180/3.1415f;
    double rollAccel=atan2(rawAcc[1],normXZ)*180/3.1415f;
-   anglesCF[0]=0.96*(anglesCF[0]+eulerRates[0]*FC::LOOP_TIME_S)+0.04*rollAccel;
-   anglesCF[1]=0.96*(anglesCF[1]+eulerRates[1]*FC::LOOP_TIME_S)+0.04*pitchAccel;
+   anglesCF[0]=0.95*(anglesCF[0]+eulerRates[0]*FC::LOOP_TIME_S)+0.05*rollAccel;
+   anglesCF[1]=0.95*(anglesCF[1]+eulerRates[1]*FC::LOOP_TIME_S)+0.05*pitchAccel;
 
    
 }
 void IMU::CalculateEulerRates(){//Transforms angular rates read by gyro to euler angle rates
-  if (cos(anglesCF[1]==0))
+  if (cos(anglesCF[1])==0)
     return;
-  eulerRates[0]=gyroData[0] + gyroData[1]*sin(anglesCF[0])*tan(anglesCF[1]) + gyroData[2]*cos(anglesCF[0])*tan(anglesCF[1]);
-  eulerRates[1]=gyroData[1]*cos(anglesCF[0]) - gyroData[2]*sin(anglesCF[0]);
-  eulerRates[2]=gyroData[1]*sin(anglesCF[0])/cos(anglesCF[1]) + gyroData[2]*cos(anglesCF[0])/cos(anglesCF[1]);
+  float rRad=anglesCF[0]*3.1415f/180.0f;
+  float pRad=anglesCF[1]*3.1415f/180.0f;
+  float yRad=anglesCF[2]*3.1415f/180.0f;
+  eulerRates[0]=gyroData[0] + gyroData[1]*sin(rRad)*tan(pRad) + gyroData[2]*cos(rRad)*tan(pRad);
+  eulerRates[1]=gyroData[1]*cos(rRad) - gyroData[2]*sin(rRad);
+  eulerRates[2]=gyroData[1]*sin(rRad)/cos(pRad) + gyroData[2]*cos(rRad)/cos(pRad);
+  /*eulerRates[0]=gyroData[0];
+  eulerRates[1]=gyroData[1];
+  eulerRates[2]=gyroData[2];*/
 }
 void IMU::SetLevel()
 {
@@ -102,5 +108,5 @@ float IMU::angle(int axis)
   return anglesCF[axis]-calAngles[axis];
 }
 void IMU::PrintState(){
-  printf("X:%f Y:%f Z:%f RX:%f RY:%f RZ:%f\n",angle(0),angle(1),angle(2),gyroData[0],gyroData[1],gyroData[2]);
+  printf("X:%7.2f Y:%7.2f  Z:%7.2f  RX:%7.2f  RY:%7.2f  RZ:%7.2f  DX:%7.2f  DY:%7.2f \n",angle(0),angle(1),angle(2),gyroData[0],gyroData[1],gyroData[2],eulerRates[0]-gyroData[0],eulerRates[1]-gyroData[1]);
 }
