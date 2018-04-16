@@ -56,14 +56,27 @@ void IMU::Init(){
     packetFlag=false;
 }
 
+void IMU::RotateIMU(){
+  float tmp=rawAcc[0];
+  rawAcc[0]=rawAcc[1];
+  rawAcc[1]=tmp;
+  rawAcc[2]*=-1;
 
+  tmp=rawGyro[0];
+  rawGyro[0]=rawGyro[1];
+  rawGyro[1]=tmp;
+  rawGyro[2]*=-1;
+}
 void IMU::Update()
 {
    int fifoCount;
    uint8_t fifoBuffer[64];
    mpu.getMotion6(&rawAcc[0], &rawAcc[1], &rawAcc[2], &rawGyro[0], &rawGyro[1], &rawGyro[2]);
-   gyroData[0]=-rawGyro[0]/gyroScale;
-   gyroData[1]=-rawGyro[1]/gyroScale;
+   
+   RotateIMU();
+
+   gyroData[0]=rawGyro[0]/gyroScale;
+   gyroData[1]=rawGyro[1]/gyroScale;
    gyroData[2]=rawGyro[2]/gyroScale;
    CalculateEulerRates();
 
