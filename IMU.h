@@ -22,6 +22,7 @@ private:
   int16_t rawAcc[3];
   bool packetFlag;
   void CalculateEulerRates();
+  void ReadDMP();
   void RotateIMU();//Modifies raw imu values to account for how IMU is phisically mounted on the quadcopter
 public:
   static IMU& instance();

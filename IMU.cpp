@@ -67,12 +67,41 @@ void IMU::RotateIMU(){
   rawGyro[1]=tmp;
   rawGyro[2]*=-1;
 }
-void IMU::Update()
+void IMU::ReadDMP()
 {
    int fifoCount;
    uint8_t fifoBuffer[64];
+  fifoCount = mpu.getFIFOCount();
+  if (fifoCount>=3*packetSize)
+  {
+  mpu.resetFIFO();
+  printf("\n\n\n\n\n\n\n------------------------------------------------------------\n\n\n\n\n\n\nFIFO OVERFLOW\n\n\n\n\n\n\n-----------------------------------------------\n\n\n\n\n\n\n\n\n\n\n\n");
+  }
+  if (fifoCount >= packetSize)
+  {
+    Quaternion q;
+    VectorFloat gravity;  
+    mpu.getFIFOBytes(fifoBuffer, packetSize);
+    mpu.dmpGetQuaternion(&q, fifoBuffer);
+    mpu.dmpGetGravity(&gravity, &q);
+    
+    VectorFloat g2=gravity;
+    g2.normalize();
+    mpu.dmpGetYawPitchRoll(anglesDMP, &q, &gravity);
+    float y=-anglesDMP[0];
+    float r=anglesDMP[1];
+    float p=-anglesDMP[2];
+    //switch from  yrp to rpy order and from radian to degree
+    anglesDMP[0]=r*180/M_PI;
+    anglesDMP[1]=p*180/M_PI;
+    anglesDMP[2]=y*180/M_PI;
+    
+  }
+}
+void IMU::Update()
+{
    mpu.getMotion6(&rawAcc[0], &rawAcc[1], &rawAcc[2], &rawGyro[0], &rawGyro[1], &rawGyro[2]);
-   
+   ReadDMP();
    RotateIMU();
 
    gyroData[0]=rawGyro[0]/gyroScale;
@@ -118,7 +147,7 @@ float IMU::rate(int axis)
 }
 float IMU::angle(int axis)
 {
-  return anglesCF[axis]-calAngles[axis];
+  return anglesDMP[axis]-calAngles[axis];
 }
 void IMU::PrintState(){
   printf("X:%7.2f Y:%7.2f  Z:%7.2f  RX:%7.2f  RY:%7.2f  RZ:%7.2f  DX:%7.2f  DY:%7.2f \n",angle(0),angle(1),angle(2),gyroData[0],gyroData[1],gyroData[2],eulerRates[0]-gyroData[0],eulerRates[1]-gyroData[1]);

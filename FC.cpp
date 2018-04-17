@@ -104,23 +104,23 @@ void FC::Update(){
 	RunPIDs();
 	WriteOutput();
 
-	bool waited=false;
-	long elapsed=millis()-startTime;
-
-	if (elapsed<LOOP_TIME_MS)
-	{
-		waited=true;
-		struct timespec time,rem;
-		time.tv_sec=0;
-		time.tv_nsec=(LOOP_TIME_MS-elapsed)*1000000;
-		int res=nanosleep(&time,&rem);
-	}
 	msWithoutInput+=LOOP_TIME_MS;
 	if ( msWithoutInput> MS_TO_UNARM)
 	{
 		printf("Too long without input, unarming\n");
 		Unarm();
 		msWithoutInput=0;
+	}
+
+	bool waited=false;
+	long elapsed=millis()-startTime;
+	if (elapsed<LOOP_TIME_MS)
+	{
+		waited=true;
+		struct timespec time,rem;
+		time.tv_sec=0;
+		time.tv_nsec=(LOOP_TIME_MS-elapsed-1)*1000000;
+		int res=nanosleep(&time,&rem);
 	}
 	if (!waited)
 	{
