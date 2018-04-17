@@ -390,7 +390,7 @@ bool I2Cdev::writeBytes(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint8_
     memcpy(buf+1,data,length);
     count = write(fd, buf, length+1);
     if (count < 0) {
-        fprintf(stderr, "Failed to write device(%d): %s\n", count, ::strerror(errno));
+        fprintf(stderr, "Failed to write device %d(%d): %s\n",devAddr, count, ::strerror(errno));
         close(fd);
         return(FALSE);
     } else if (count != length+1) {

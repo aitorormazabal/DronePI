@@ -363,20 +363,20 @@ uint8_t MPU6050::dmpInitialize() {
 
     // enable MPU AUX I2C bypass mode
     //DEBUG_PRINTLN(F("Enabling AUX I2C bypass mode..."));
-    //setI2CBypassEnabled(true);
+    setI2CBypassEnabled(true);
 
     DEBUG_PRINTLN(F("Setting magnetometer mode to power-down..."));
     //mag -> setMode(0);
-    I2Cdev::writeByte(0x0E, 0x0A, 0x00);
+    I2Cdev::writeByte(0x0C, 0x0A, 0x00);
 
     DEBUG_PRINTLN(F("Setting magnetometer mode to fuse access..."));
     //mag -> setMode(0x0F);
-    I2Cdev::writeByte(0x0E, 0x0A, 0x0F);
+    I2Cdev::writeByte(0x0C, 0x0A, 0x0F);
 
     DEBUG_PRINTLN(F("Reading mag magnetometer factory calibration..."));
     int8_t asax, asay, asaz;
     //mag -> getAdjustment(&asax, &asay, &asaz);
-    I2Cdev::readBytes(0x0E, 0x10, 3, buffer);
+    I2Cdev::readBytes(0x0C, 0x10, 3, buffer);
     asax = (int8_t)buffer[0];
     asay = (int8_t)buffer[1];
     asaz = (int8_t)buffer[2];
@@ -389,14 +389,14 @@ uint8_t MPU6050::dmpInitialize() {
 
     DEBUG_PRINTLN(F("Setting magnetometer mode to power-down..."));
     //mag -> setMode(0);
-    I2Cdev::writeByte(0x0E, 0x0A, 0x00);
+    I2Cdev::writeByte(0x0C, 0x0A, 0x00);
 
     // load DMP code into memory banks
     DEBUG_PRINT(F("Writing DMP code to MPU memory banks ("));
     DEBUG_PRINT(MPU6050_DMP_CODE_SIZE);
     DEBUG_PRINTLN(F(" bytes)"));
     if (writeProgMemoryBlock(dmpMemory, MPU6050_DMP_CODE_SIZE)) {
-        DEBUG_PRINTLN(F("Success! DMP code written and verified."));
+        printf("Success! DMP code written and verified.\n");
 
         DEBUG_PRINTLN(F("Configuring DMP and related settings..."));
 
@@ -472,10 +472,10 @@ uint8_t MPU6050::dmpInitialize() {
             writeMemoryBlock(dmpUpdate + 3, dmpUpdate[2], dmpUpdate[0], dmpUpdate[1]);
 
             DEBUG_PRINTLN(F("Disabling all standby flags..."));
-            I2Cdev::writeByte(0x68, MPU6050_RA_PWR_MGMT_2, 0x00);
+            I2Cdev::writeByte(0x69, MPU6050_RA_PWR_MGMT_2, 0x00);
 
             DEBUG_PRINTLN(F("Setting accelerometer sensitivity to +/- 2g..."));
-            I2Cdev::writeByte(0x68, MPU6050_RA_ACCEL_CONFIG, 0x00);
+            I2Cdev::writeByte(0x69, MPU6050_RA_ACCEL_CONFIG, 0x00);
 
             DEBUG_PRINTLN(F("Setting motion detection threshold to 2..."));
             setMotionDetectionThreshold(2);
@@ -491,39 +491,39 @@ uint8_t MPU6050::dmpInitialize() {
 
             DEBUG_PRINTLN(F("Setting AK8975 to single measurement mode..."));
             //mag -> setMode(1);
-            I2Cdev::writeByte(0x0E, 0x0A, 0x01);
+            I2Cdev::writeByte(0x0C, 0x0A, 0x01);
 
             // setup AK8975 (0x0E) as Slave 0 in read mode
             DEBUG_PRINTLN(F("Setting up AK8975 read slave 0..."));
-            I2Cdev::writeByte(0x68, MPU6050_RA_I2C_SLV0_ADDR, 0x8E);
-            I2Cdev::writeByte(0x68, MPU6050_RA_I2C_SLV0_REG,  0x01);
-            I2Cdev::writeByte(0x68, MPU6050_RA_I2C_SLV0_CTRL, 0xDA);
+            I2Cdev::writeByte(0x69, MPU6050_RA_I2C_SLV0_ADDR, 0x8E);
+            I2Cdev::writeByte(0x69, MPU6050_RA_I2C_SLV0_REG,  0x01);
+            I2Cdev::writeByte(0x69, MPU6050_RA_I2C_SLV0_CTRL, 0xDA);
 
             // setup AK8975 (0x0E) as Slave 2 in write mode
             DEBUG_PRINTLN(F("Setting up AK8975 write slave 2..."));
-            I2Cdev::writeByte(0x68, MPU6050_RA_I2C_SLV2_ADDR, 0x0E);
-            I2Cdev::writeByte(0x68, MPU6050_RA_I2C_SLV2_REG,  0x0A);
-            I2Cdev::writeByte(0x68, MPU6050_RA_I2C_SLV2_CTRL, 0x81);
-            I2Cdev::writeByte(0x68, MPU6050_RA_I2C_SLV2_DO,   0x01);
+            I2Cdev::writeByte(0x69, MPU6050_RA_I2C_SLV2_ADDR, 0x0C);
+            I2Cdev::writeByte(0x69, MPU6050_RA_I2C_SLV2_REG,  0x0A);
+            I2Cdev::writeByte(0x69, MPU6050_RA_I2C_SLV2_CTRL, 0x81);
+            I2Cdev::writeByte(0x69, MPU6050_RA_I2C_SLV2_DO,   0x01);
 
             // setup I2C timing/delay control
             DEBUG_PRINTLN(F("Setting up slave access delay..."));
-            I2Cdev::writeByte(0x68, MPU6050_RA_I2C_SLV4_CTRL, 0x18);
-            I2Cdev::writeByte(0x68, MPU6050_RA_I2C_MST_DELAY_CTRL, 0x05);
+            I2Cdev::writeByte(0x69, MPU6050_RA_I2C_SLV4_CTRL, 0x18);
+            I2Cdev::writeByte(0x69, MPU6050_RA_I2C_MST_DELAY_CTRL, 0x05);
 
             // enable interrupts
             DEBUG_PRINTLN(F("Enabling default interrupt behavior/no bypass..."));
-            I2Cdev::writeByte(0x68, MPU6050_RA_INT_PIN_CFG, 0x00);
+            I2Cdev::writeByte(0x69, MPU6050_RA_INT_PIN_CFG, 0x00);
 
             // enable I2C master mode and reset DMP/FIFO
             DEBUG_PRINTLN(F("Enabling I2C master mode..."));
-            I2Cdev::writeByte(0x68, MPU6050_RA_USER_CTRL, 0x20);
+            I2Cdev::writeByte(0x69, MPU6050_RA_USER_CTRL, 0x20);
             DEBUG_PRINTLN(F("Resetting FIFO..."));
-            I2Cdev::writeByte(0x68, MPU6050_RA_USER_CTRL, 0x24);
+            I2Cdev::writeByte(0x69, MPU6050_RA_USER_CTRL, 0x24);
             DEBUG_PRINTLN(F("Rewriting I2C master mode enabled because...I don't know"));
-            I2Cdev::writeByte(0x68, MPU6050_RA_USER_CTRL, 0x20);
+            I2Cdev::writeByte(0x69, MPU6050_RA_USER_CTRL, 0x20);
             DEBUG_PRINTLN(F("Enabling and resetting DMP/FIFO..."));
-            I2Cdev::writeByte(0x68, MPU6050_RA_USER_CTRL, 0xE8);
+            I2Cdev::writeByte(0x69, MPU6050_RA_USER_CTRL, 0xE8);
 
             DEBUG_PRINTLN(F("Writing final memory update 5/19 (function unknown)..."));
             for (j = 0; j < 4 || j < dmpUpdate[2] + 3; j++, pos++) dmpUpdate[j] = pgm_read_byte(&dmpUpdates[pos]);
