@@ -258,6 +258,64 @@ void MPU6050::setFullScaleGyroRange(uint8_t range) {
     I2Cdev::writeBits(devAddr, MPU6050_RA_GYRO_CONFIG, MPU6050_GCONFIG_FS_SEL_BIT, MPU6050_GCONFIG_FS_SEL_LENGTH, range);
 }
 
+// SELF TEST FACTORY TRIM VALUES
+
+/** Get self-test factory trim value for accelerometer X axis.
+ * @return factory trim value
+ * @see MPU6050_RA_SELF_TEST_X
+ */
+uint8_t MPU6050::getAccelXSelfTestFactoryTrim() {
+    I2Cdev::readByte(devAddr, MPU6050_RA_SELF_TEST_X, &buffer[0]);
+	I2Cdev::readByte(devAddr, MPU6050_RA_SELF_TEST_A, &buffer[1]);	
+    return (buffer[0]>>3) | ((buffer[1]>>4) & 0x03);
+}
+
+/** Get self-test factory trim value for accelerometer Y axis.
+ * @return factory trim value
+ * @see MPU6050_RA_SELF_TEST_Y
+ */
+uint8_t MPU6050::getAccelYSelfTestFactoryTrim() {
+    I2Cdev::readByte(devAddr, MPU6050_RA_SELF_TEST_Y, &buffer[0]);
+	I2Cdev::readByte(devAddr, MPU6050_RA_SELF_TEST_A, &buffer[1]);	
+    return (buffer[0]>>3) | ((buffer[1]>>2) & 0x03);
+}
+
+/** Get self-test factory trim value for accelerometer Z axis.
+ * @return factory trim value
+ * @see MPU6050_RA_SELF_TEST_Z
+ */
+uint8_t MPU6050::getAccelZSelfTestFactoryTrim() {
+    I2Cdev::readBytes(devAddr, MPU6050_RA_SELF_TEST_Z, 2, buffer);	
+    return (buffer[0]>>3) | (buffer[1] & 0x03);
+}
+
+/** Get self-test factory trim value for gyro X axis.
+ * @return factory trim value
+ * @see MPU6050_RA_SELF_TEST_X
+ */
+uint8_t MPU6050::getGyroXSelfTestFactoryTrim() {
+    I2Cdev::readByte(devAddr, MPU6050_RA_SELF_TEST_X, buffer);	
+    return (buffer[0] & 0x1F);
+}
+
+/** Get self-test factory trim value for gyro Y axis.
+ * @return factory trim value
+ * @see MPU6050_RA_SELF_TEST_Y
+ */
+uint8_t MPU6050::getGyroYSelfTestFactoryTrim() {
+    I2Cdev::readByte(devAddr, MPU6050_RA_SELF_TEST_Y, buffer);	
+    return (buffer[0] & 0x1F);
+}
+
+/** Get self-test factory trim value for gyro Z axis.
+ * @return factory trim value
+ * @see MPU6050_RA_SELF_TEST_Z
+ */
+uint8_t MPU6050::getGyroZSelfTestFactoryTrim() {
+    I2Cdev::readByte(devAddr, MPU6050_RA_SELF_TEST_Z, buffer);	
+    return (buffer[0] & 0x1F);
+}
+
 // ACCEL_CONFIG register
 
 /** Get self-test enabled setting for accelerometer X axis.
@@ -469,7 +527,7 @@ uint8_t MPU6050::getMotionDetectionThreshold() {
     I2Cdev::readByte(devAddr, MPU6050_RA_MOT_THR, buffer);
     return buffer[0];
 }
-/** Set free-fall event acceleration threshold.
+/** Set motion detection event acceleration threshold.
  * @param threshold New motion detection acceleration threshold value (LSB = 2mg)
  * @see getMotionDetectionThreshold()
  * @see MPU6050_RA_MOT_THR
@@ -1995,6 +2053,14 @@ uint32_t MPU6050::getExternalSensorDWord(int position) {
 
 // MOT_DETECT_STATUS register
 
+/** Get full motion detection status register content (all bits).
+ * @return Motion detection status byte
+ * @see MPU6050_RA_MOT_DETECT_STATUS
+ */
+uint8_t MPU6050::getMotionStatus() {
+    I2Cdev::readByte(devAddr, MPU6050_RA_MOT_DETECT_STATUS, buffer);
+    return buffer[0];
+}
 /** Get X-axis negative motion detection interrupt status.
  * @return Motion detection status
  * @see MPU6050_RA_MOT_DETECT_STATUS
@@ -2499,7 +2565,7 @@ void MPU6050::setClockSource(uint8_t source) {
  * 1            | 2.5 Hz
  * 2            | 5 Hz
  * 3            | 10 Hz
- * <pre>
+ * </pre>
  *
  * For further information regarding the MPU-60X0's power modes, please refer to
  * Register 107.
@@ -2680,7 +2746,11 @@ uint8_t MPU6050::getFIFOByte() {
     return buffer[0];
 }
 void MPU6050::getFIFOBytes(uint8_t *data, uint8_t length) {
-    I2Cdev::readBytes(devAddr, MPU6050_RA_FIFO_R_W, length, data);
+    if(length > 0){
+        I2Cdev::readBytes(devAddr, MPU6050_RA_FIFO_R_W, length, data);
+    } else {
+    	*data = 0;
+    }
 }
 /** Write byte to FIFO buffer.
  * @see getFIFOByte()
@@ -2727,31 +2797,31 @@ uint8_t MPU6050::getOTPBankValid() {
 void MPU6050::setOTPBankValid(bool enabled) {
     I2Cdev::writeBit(devAddr, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OTP_BNK_VLD_BIT, enabled);
 }
-int8_t MPU6050::getXGyroOffset() {
+int8_t MPU6050::getXGyroOffsetTC() {
     I2Cdev::readBits(devAddr, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, buffer);
     return buffer[0];
 }
-void MPU6050::setXGyroOffset(int8_t offset) {
+void MPU6050::setXGyroOffsetTC(int8_t offset) {
     I2Cdev::writeBits(devAddr, MPU6050_RA_XG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, offset);
 }
 
 // YG_OFFS_TC register
 
-int8_t MPU6050::getYGyroOffset() {
+int8_t MPU6050::getYGyroOffsetTC() {
     I2Cdev::readBits(devAddr, MPU6050_RA_YG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, buffer);
     return buffer[0];
 }
-void MPU6050::setYGyroOffset(int8_t offset) {
+void MPU6050::setYGyroOffsetTC(int8_t offset) {
     I2Cdev::writeBits(devAddr, MPU6050_RA_YG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, offset);
 }
 
 // ZG_OFFS_TC register
 
-int8_t MPU6050::getZGyroOffset() {
+int8_t MPU6050::getZGyroOffsetTC() {
     I2Cdev::readBits(devAddr, MPU6050_RA_ZG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, buffer);
     return buffer[0];
 }
-void MPU6050::setZGyroOffset(int8_t offset) {
+void MPU6050::setZGyroOffsetTC(int8_t offset) {
     I2Cdev::writeBits(devAddr, MPU6050_RA_ZG_OFFS_TC, MPU6050_TC_OFFSET_BIT, MPU6050_TC_OFFSET_LENGTH, offset);
 }
 
@@ -2817,31 +2887,31 @@ void MPU6050::setZAccelOffset(int16_t offset) {
 
 // XG_OFFS_USR* registers
 
-int16_t MPU6050::getXGyroOffsetUser() {
+int16_t MPU6050::getXGyroOffset() {
     I2Cdev::readBytes(devAddr, MPU6050_RA_XG_OFFS_USRH, 2, buffer);
     return (((int16_t)buffer[0]) << 8) | buffer[1];
 }
-void MPU6050::setXGyroOffsetUser(int16_t offset) {
+void MPU6050::setXGyroOffset(int16_t offset) {
     I2Cdev::writeWord(devAddr, MPU6050_RA_XG_OFFS_USRH, offset);
 }
 
 // YG_OFFS_USR* register
 
-int16_t MPU6050::getYGyroOffsetUser() {
+int16_t MPU6050::getYGyroOffset() {
     I2Cdev::readBytes(devAddr, MPU6050_RA_YG_OFFS_USRH, 2, buffer);
     return (((int16_t)buffer[0]) << 8) | buffer[1];
 }
-void MPU6050::setYGyroOffsetUser(int16_t offset) {
+void MPU6050::setYGyroOffset(int16_t offset) {
     I2Cdev::writeWord(devAddr, MPU6050_RA_YG_OFFS_USRH, offset);
 }
 
 // ZG_OFFS_USR* register
 
-int16_t MPU6050::getZGyroOffsetUser() {
+int16_t MPU6050::getZGyroOffset() {
     I2Cdev::readBytes(devAddr, MPU6050_RA_ZG_OFFS_USRH, 2, buffer);
     return (((int16_t)buffer[0]) << 8) | buffer[1];
 }
-void MPU6050::setZGyroOffsetUser(int16_t offset) {
+void MPU6050::setZGyroOffset(int16_t offset) {
     I2Cdev::writeWord(devAddr, MPU6050_RA_ZG_OFFS_USRH, offset);
 }
 
@@ -2972,8 +3042,8 @@ bool MPU6050::writeMemoryBlock(const uint8_t *data, uint16_t dataSize, uint8_t b
     setMemoryBank(bank);
     setMemoryStartAddress(address);
     uint8_t chunkSize;
-    uint8_t *verifyBuffer;
-    uint8_t *progBuffer = 0; // Keep compiler quiet
+    uint8_t *verifyBuffer=0;
+    uint8_t *progBuffer=0;
     uint16_t i;
     uint8_t j;
     if (verify) verifyBuffer = (uint8_t *)malloc(MPU6050_DMP_MEMORY_CHUNK_SIZE);
@@ -3048,7 +3118,8 @@ bool MPU6050::writeProgMemoryBlock(const uint8_t *data, uint16_t dataSize, uint8
     return writeMemoryBlock(data, dataSize, bank, address, verify, true);
 }
 bool MPU6050::writeDMPConfigurationSet(const uint8_t *data, uint16_t dataSize, bool useProgMem) {
-    uint8_t *progBuffer = 0, success, special;
+    uint8_t *progBuffer = 0;
+	uint8_t success, special;
     uint16_t i, j;
     if (useProgMem) {
         progBuffer = (uint8_t *)malloc(8); // assume 8-byte blocks, realloc later if necessary
