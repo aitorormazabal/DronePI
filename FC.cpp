@@ -156,7 +156,10 @@ void FC::RunPIDs(){
 	{
 		for (int i=0;i<3;i++)
 		{
-			anglePIDS[i]->target=Input::instance().targetAngle[i];
+			float target=Input::instance().targetAngle[i];
+			if (i==2)
+				target=IMU::instance().CorrectedTarget(target);
+			anglePIDS[i]->target=target;
 			anglePIDS[i]->reading=IMU::instance().angle(i);
 			ratePIDS[i]->target=anglePIDS[i]->Run(delta);
 			ratePIDS[i]->reading=IMU::instance().rate(i);

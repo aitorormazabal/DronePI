@@ -67,6 +67,15 @@ void IMU::RotateIMU(){
   rawGyro[1]=tmp;
   rawGyro[2]*=-1;
 }
+float IMU::CorrectedTarget(float currTarget)
+{
+  float diff=currTarget-angle(2);
+  while (diff<-180)
+    diff+=360;
+  while (diff>180)
+    diff-=360;
+  return angle(2)+diff;
+}
 void IMU::ReadDMP()
 {
    int fifoCount;
@@ -88,7 +97,7 @@ void IMU::ReadDMP()
     VectorFloat g2=gravity;
     g2.normalize();
     mpu.dmpGetYawPitchRoll(anglesDMP, &q, &gravity);
-    float y=-anglesDMP[0];
+    float y=anglesDMP[0];
     float r=anglesDMP[1];
     float p=-anglesDMP[2];
     //switch from  yrp to rpy order and from radian to degree
@@ -139,7 +148,7 @@ void IMU::CalculateEulerRates(){//Transforms angular rates read by gyro to euler
 void IMU::SetLevel()
 {
   for (int i=0;i<3;i++)
-    calAngles[i]=anglesCF[i];
+    calAngles[i]=anglesDMP[i];
 }
 float IMU::rate(int axis)
 {

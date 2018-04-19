@@ -27,6 +27,7 @@ private:
 public:
   static IMU& instance();
   float angle(int axis);
+  float CorrectedTarget(float currTarget);//To calculate correct target for yaw pid so that shortest way is chosen
   float rate(int axis);
   void SetLevel();
   void Init();
