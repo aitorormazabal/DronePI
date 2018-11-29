@@ -21,11 +21,11 @@ void FC::LoadSettings(std::string fileName){
 	std::ifstream file(fileName.c_str());
 	if (file.is_open())
 	{
-		file>>PWM_RES;
-		file>>PWM_MIN;
-		file>>PWM_MAX;
+		file>>PWM_RES;//First value is the PWM resolution used in ServoBlaster
+		file>>PWM_MIN;//Min pwm value for ESCs
+		file>>PWM_MAX;//Max pwm value for ESCs
 		file>>MS_TO_UNARM;
-		for (int i=0;i<3;i++)
+		for (int i=0;i<3;i++)//Rate and angle PID values for each axis, order of axis is roll/pitch/yaw
 		{
 			float P,I,D;
 			file>>P>>I>>D;
