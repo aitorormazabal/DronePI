@@ -8,6 +8,7 @@ The control algorithm uses independent cascaded PIDs for each axis. The PID valu
 
 Input is received through a UNIX socket created by the program at startup, in the form of 4 byte udp packets. I use a separate python program to receive commands from an Android app and send them to the flight controller through the socket. The first byte of each packet indicates the command type, and the next three the data. These commands can be used for navigating the drone or to change it's parameters on the fly. You can change Input::Init and Input::Update to modify how input is recieved.
 
+I used MPU6050 and MPU9150 IMUs with this software, the code used to interface with the IMU is in IMU.cpp.
 
 
 Credit to Jeff Rowberg for the I2CDev and MPU6050 libraries, and Richard Hirst for ServoBlaster. I made minor modifications to the I2CDev library for it to work on the Pi instead of an Arduino.
